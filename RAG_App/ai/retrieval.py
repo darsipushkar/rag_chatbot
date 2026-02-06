@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from ..ai.embeddings import get_embeddings
  
-def search_similar_chunks(db,query:str,document_id,top_chunks:int=10):
+def search_similar_chunks(db,query:str,document_id,top_chunks:int=5):
  
     query_embedding = get_embeddings(query)
  
@@ -9,7 +9,7 @@ def search_similar_chunks(db,query:str,document_id,top_chunks:int=10):
                  FROM document_chunks
                  WHERE document_id = :document_id
                  ORDER BY embedding <=> (:query_embedding)::vector
-                 LIMIT {int(top_chunks)}
+                 LIMIT :top_chunks
                  """
    
     sql=text(sql_string)
