@@ -7,6 +7,7 @@ from ..ai.retrieval import search_similar_chunks
 from ..ai.llm_chat import chat_llm
 from ..chat_history import get_chat_history
 from fastapi import HTTPException
+from ..ai.topic_resolver import resolve_question
 
 
 router = APIRouter(prefix="/chat",tags=["Chat"])
@@ -32,23 +33,24 @@ async def Chat(query: str, session_id: str | None = None, document_id: str | Non
         document_id = session.document_id
 
 
+    history=get_chat_history(db,session_id)
+    print(history)
+    
+    resolved_query,explicit_topic=resolve_question(history,query)
+
+
+    chunks=search_similar_chunks(db=db,query=resolved_query,document_id=document_id)
+    print(chunks)
+
+    context="\n".join(chunks)
+
+    answer=chat_llm(context,history,resolved_query)
     
     user_message=ChatMessage(session_id=UUID(session_id),role="user",content=query)
     db.add(user_message)
     db.commit()
 
-    chunks=search_similar_chunks(db=db,query=query,document_id=document_id)
-    print(chunks)
-
-    context="\n".join(chunks)
-
-    history=get_chat_history(db,session_id)
-    print(history)
-
-    answer=chat_llm(context,history,query)
-
     ai_message=ChatMessage(session_id=UUID(session_id),role="assistant",content=answer)
-
     db.add(ai_message)
     db.commit()
 
